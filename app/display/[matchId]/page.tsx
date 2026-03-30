@@ -26,15 +26,45 @@ interface TeamProps {
   code: string; score: number; setsWon: number; totalSets: number; 
   timeoutsUsed: number; colorTheme: string; side: "left" | "right";
   hasServe: boolean; pointAlert: string | null;
+  isTournamentMode: boolean;
+  showRotation: boolean;
+  lineup: string[];
+  cards: { yellow: number; red: number };
 }
 
-function TeamPanel({ code, score, setsWon, totalSets, timeoutsUsed, colorTheme, side, hasServe, pointAlert }: TeamProps) {
+function PlayerDot({ num, isServing, colorTheme }: { num: string, isServing?: boolean, colorTheme?: string }) {
+  const theme = colorTheme ? COLOR_MAP[colorTheme] : null;
+  return (
+    <div className="relative flex items-center justify-center">
+      <div className={cn("w-7 h-7 rounded-full flex items-center justify-center font-black text-xs z-10 transition-colors duration-300", 
+        isServing ? theme?.bg + " text-white shadow-[0_0_15px_rgba(255,255,255,0.4)] scale-110" : "bg-slate-800 text-slate-300 border border-slate-700")}
+      >
+        {num}
+      </div>
+    </div>
+  );
+}
+
+function TeamPanel({ code, score, setsWon, totalSets, timeoutsUsed, colorTheme, side, hasServe, pointAlert, isTournamentMode, showRotation, lineup, cards }: TeamProps) {
   const isLeft = side === "left";
   const theme = COLOR_MAP[colorTheme] || COLOR_MAP["cyan"];
+  
   return (
-    <div className={cn("flex flex-col items-center", isLeft ? "items-start" : "items-end")}>
+    <div className={cn("flex flex-col items-center relative w-full", isLeft ? "items-start" : "items-end")}>
       
-      {/* ALERTA DE SET/MATCH POINT (Arriba) */}
+      {/* TARJETAS DE SANCIÓN - APILADAS DE A 5 HACIA ABAJO */}
+      <div 
+        className={cn("absolute top-12 grid grid-rows-5 grid-flow-col gap-2", isLeft ? "-right-16" : "-left-16")} 
+        style={{ direction: isLeft ? "ltr" : "rtl" }}
+      >
+        {Array.from({ length: cards.yellow }).map((_, i) => (
+          <motion.div initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} key={`y-${i}`} className="w-5 h-8 bg-yellow-400 rounded-sm shadow-md border border-yellow-500" />
+        ))}
+        {Array.from({ length: cards.red }).map((_, i) => (
+          <motion.div initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} key={`r-${i}`} className="w-5 h-8 bg-red-600 rounded-sm shadow-[0_0_15px_rgba(220,38,38,0.6)] border border-red-700" />
+        ))}
+      </div>
+
       <div className="h-10 mb-2 flex items-end">
         <AnimatePresence>
           {pointAlert && (
@@ -63,47 +93,69 @@ function TeamPanel({ code, score, setsWon, totalSets, timeoutsUsed, colorTheme, 
       </div>
       
       <div className={cn("mt-6 flex flex-col gap-3", isLeft ? "items-start" : "items-end")}>
-        {/* Sets */}
         <div className={cn("flex gap-3", isLeft ? "flex-row" : "flex-row-reverse")}>
           {Array.from({ length: totalSets }).map((_, i) => (
             <motion.div key={i} initial={false} animate={{ backgroundColor: i < setsWon ? theme.hex : "transparent", scale: i < setsWon ? [1, 1.2, 1] : 1 }} transition={{ duration: 0.5 }} className={cn("h-6 w-12 border-2", theme.border)} style={{ clipPath: isLeft ? "polygon(0 0, 100% 0, 90% 100%, 0% 100%)" : "polygon(10% 0, 100% 0, 100% 100%, 0% 100%)" }} />
           ))}
         </div>
         
-        {/* Tiempos Muertos */}
         <div className={cn("flex gap-2", isLeft ? "flex-row" : "flex-row-reverse")}>
           <div className={cn("h-2 w-10 transition-colors duration-500", timeoutsUsed > 0 ? "bg-slate-300" : theme.bg)} style={{ clipPath: isLeft ? "polygon(0 0, 100% 0, 90% 100%, 0% 100%)" : "polygon(10% 0, 100% 0, 100% 100%, 0% 100%)" }} />
           <div className={cn("h-2 w-10 transition-colors duration-500", timeoutsUsed > 1 ? "bg-slate-300" : theme.bg)} style={{ clipPath: isLeft ? "polygon(0 0, 100% 0, 90% 100%, 0% 100%)" : "polygon(10% 0, 100% 0, 100% 100%, 0% 100%)" }} />
         </div>
 
-        {/* INDICADOR DE SAQUE RESTAURADO (Debajo de los tiempos muertos) */}
         <div className="h-12 mt-2">
           <AnimatePresence>
-            {hasServe && (
-              <motion.div
-                initial={{ opacity: 0, x: isLeft ? -30 : 30, scale: 0.9 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: isLeft ? -30 : 30, scale: 0.9 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                className={cn(
-                  "flex items-center gap-3 px-6 py-2 shadow-lg",
-                  theme.bg,
-                  isLeft ? "flex-row" : "flex-row-reverse"
-                )}
-                style={{
-                  clipPath: isLeft ? "polygon(0 0, 100% 0, 92% 100%, 0% 100%)" : "polygon(8% 0, 100% 0, 100% 100%, 0% 100%)"
-                }}
-              >
-                <motion.div 
-                  animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }} 
-                  transition={{ repeat: Infinity, duration: 1.5 }} 
-                  className="w-3 h-3 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,1)]" 
-                />
+            {hasServe && (!isTournamentMode || !showRotation) && (
+              <motion.div initial={{ opacity: 0, x: isLeft ? -30 : 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: isLeft ? -30 : 30 }} className={cn("flex items-center gap-3 px-6 py-2 shadow-lg", theme.bg, isLeft ? "flex-row" : "flex-row-reverse")} style={{ clipPath: isLeft ? "polygon(0 0, 100% 0, 92% 100%, 0% 100%)" : "polygon(8% 0, 100% 0, 100% 100%, 0% 100%)" }}>
+                <motion.div animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-3 h-3 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,1)]" />
                 <span className="text-white font-black tracking-widest uppercase text-sm">Saque</span>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
+
+        {/* CANCHA DE VOLEIBOL - MODO TORNEO */}
+        {isTournamentMode && showRotation && lineup.length === 6 && (
+          <div className={cn("mt-2", isLeft ? "self-start" : "self-end")}>
+            <span className="text-slate-400 text-[9px] font-bold uppercase tracking-widest mb-1 block">Rotación en Cancha</span>
+            <div className="relative flex bg-slate-900 border-2 border-slate-700 p-1 gap-1 overflow-hidden" style={{ width: "160px", height: "120px" }}>
+              
+              <div className={cn("absolute top-0 bottom-0 w-0.5 bg-slate-700/50", isLeft ? "right-[33%]" : "left-[33%]")} />
+              <div className={cn("absolute top-0 bottom-0 w-1 bg-slate-400 shadow-[0_0_10px_rgba(255,255,255,0.2)] z-0", isLeft ? "-right-1" : "-left-1")} />
+
+              {isLeft ? (
+                // EQUIPO A (Red a la derecha)
+                <>
+                  <div className="flex flex-col justify-between w-2/3 py-1 items-start pl-2 z-10">
+                    <PlayerDot num={lineup[4]} /> {/* Pos 5: Atrás Izquierda (Arriba TV) */}
+                    <PlayerDot num={lineup[5]} /> {/* Pos 6: Atrás Centro */}
+                    <PlayerDot num={lineup[0]} isServing={hasServe} colorTheme={colorTheme} /> {/* Pos 1: Atrás Derecha (Abajo TV) */}
+                  </div>
+                  <div className="flex flex-col justify-between w-1/3 py-1 items-end pr-3 z-10">
+                    <PlayerDot num={lineup[3]} /> {/* Pos 4: Frente Izquierda (Arriba TV) */}
+                    <PlayerDot num={lineup[2]} /> {/* Pos 3: Frente Centro */}
+                    <PlayerDot num={lineup[1]} /> {/* Pos 2: Frente Derecha (Abajo TV) */}
+                  </div>
+                </>
+              ) : (
+                // EQUIPO B (Red a la izquierda)
+                <>
+                  <div className="flex flex-col justify-between w-1/3 py-1 items-start pl-3 z-10">
+                    <PlayerDot num={lineup[1]} /> {/* Pos 2: Frente Derecha (Arriba TV) */}
+                    <PlayerDot num={lineup[2]} /> {/* Pos 3: Frente Centro */}
+                    <PlayerDot num={lineup[3]} /> {/* Pos 4: Frente Izquierda (Abajo TV) */}
+                  </div>
+                  <div className="flex flex-col justify-between w-2/3 py-1 items-end pr-2 z-10">
+                    <PlayerDot num={lineup[0]} isServing={hasServe} colorTheme={colorTheme} /> {/* Pos 1: Atrás Derecha (Arriba TV) */}
+                    <PlayerDot num={lineup[5]} /> {/* Pos 6: Atrás Centro */}
+                    <PlayerDot num={lineup[4]} /> {/* Pos 5: Atrás Izquierda (Abajo TV) */}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -168,7 +220,6 @@ export default function DisplayPage({ params }: { params: Promise<{ matchId: str
   const isMatchComplete = match.sets_a >= totalSets || match.sets_b >= totalSets;
   const isConnected = Boolean(match.controller_id);
 
-  // LÓGICA DE ALERTA DE PUNTOS
   const targetPoints = (currentSet === 5) ? 15 : 25;
   const hasSetPointA = match.score_a >= targetPoints - 1 && match.score_a - match.score_b >= 1;
   const hasSetPointB = match.score_b >= targetPoints - 1 && match.score_b - match.score_a >= 1;
@@ -240,22 +291,38 @@ export default function DisplayPage({ params }: { params: Promise<{ matchId: str
         <div className="absolute left-0 top-0 h-full w-1/3 opacity-15 z-0" style={{ backgroundColor: themeA.hex, clipPath: "polygon(0 0, 100% 0, 70% 100%, 0% 100%)" }} />
         <div className="absolute right-0 top-0 h-full w-1/3 opacity-15 z-0" style={{ backgroundColor: themeB.hex, clipPath: "polygon(30% 0, 100% 0, 100% 100%, 0% 100%)" }} />
         
-        <div className="grid grid-cols-3 w-full max-w-7xl items-center z-10">
+        <div className="grid grid-cols-3 w-full max-w-7xl items-center z-10 mt-16">
           <div className="flex justify-start">
-            <TeamPanel code={match.team_a_name || "LOC"} score={match.score_a} setsWon={match.sets_a} totalSets={totalSets} timeoutsUsed={match.timeouts_a || 0} colorTheme={match.team_a_color || "cyan"} side="left" hasServe={match.serving_team === 'a'} pointAlert={alertA} />
+            <TeamPanel 
+              code={match.team_a_name || "LOC"} score={match.score_a} setsWon={match.sets_a} totalSets={totalSets} 
+              timeoutsUsed={match.timeouts_a || 0} colorTheme={match.team_a_color || "cyan"} side="left" 
+              hasServe={match.serving_team === 'a'} pointAlert={alertA}
+              isTournamentMode={match.is_tournament_mode || false}
+              showRotation={match.show_rotation_on_tv ?? true}
+              lineup={match.lineup_a?.length === 6 ? match.lineup_a : ["1","2","3","4","5","6"]}
+              cards={match.cards_a || { yellow: 0, red: 0 }}
+            />
           </div>
           <div className="flex flex-col items-center justify-center gap-6 h-full">
-            <div className="h-64 w-1 bg-gradient-to-b from-transparent via-slate-300 to-transparent" />
+            <div className="h-48 w-1 bg-gradient-to-b from-transparent via-slate-300 to-transparent" />
             <div className="text-4xl font-bold text-slate-300 font-sans">VS</div>
-            <div className="h-64 w-1 bg-gradient-to-b from-transparent via-slate-300 to-transparent" />
+            <div className="h-48 w-1 bg-gradient-to-b from-transparent via-slate-300 to-transparent" />
           </div>
           <div className="flex justify-end">
-            <TeamPanel code={match.team_b_name || "VIS"} score={match.score_b} setsWon={match.sets_b} totalSets={totalSets} timeoutsUsed={match.timeouts_b || 0} colorTheme={match.team_b_color || "rose"} side="right" hasServe={match.serving_team === 'b'} pointAlert={alertB} />
+            <TeamPanel 
+              code={match.team_b_name || "VIS"} score={match.score_b} setsWon={match.sets_b} totalSets={totalSets} 
+              timeoutsUsed={match.timeouts_b || 0} colorTheme={match.team_b_color || "rose"} side="right" 
+              hasServe={match.serving_team === 'b'} pointAlert={alertB}
+              isTournamentMode={match.is_tournament_mode || false}
+              showRotation={match.show_rotation_on_tv ?? true}
+              lineup={match.lineup_b?.length === 6 ? match.lineup_b : ["1","2","3","4","5","6"]}
+              cards={match.cards_b || { yellow: 0, red: 0 }}
+            />
           </div>
         </div>
       </div>
 
-      {/* BARRA INFERIOR CON ANIMACIÓN DE ENTRADA Y SALIDA */}
+      {/* BARRA INFERIOR */}
       <AnimatePresence>
         {!isConnected && (
           <motion.div initial={{ height: 0, opacity: 0, translateY: 50 }} animate={{ height: 112, opacity: 1, translateY: 0 }} exit={{ height: 0, opacity: 0, translateY: 50 }} transition={{ duration: 0.8, ease: "easeInOut" }} className="relative z-30 w-full overflow-hidden">
@@ -267,12 +334,6 @@ export default function DisplayPage({ params }: { params: Promise<{ matchId: str
                 <div className="flex flex-col">
                   <span className="text-sm font-medium uppercase tracking-wider text-slate-400">Escanea para controlar</span>
                   <span className="text-xs text-slate-500">Panel Remoto Seguro</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center">
-                  <div className="h-8 w-3" style={{ backgroundColor: themeA.hex, clipPath: "polygon(0 0, 100% 20%, 100% 80%, 0 100%)" }} />
-                  <div className="h-8 w-3" style={{ backgroundColor: themeB.hex, clipPath: "polygon(0 20%, 100% 0, 100% 100%, 0 80%)" }} />
                 </div>
               </div>
               <div className="flex items-center gap-4">
