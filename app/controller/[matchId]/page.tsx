@@ -180,10 +180,10 @@ export default function ControllerPage({ params }: { params: Promise<{ matchId: 
   };
   const handleCancelTimeout = () => { setActiveTimeoutTeam(null); setTimeoutEndsAt(null); };
 
-  if (accessStatus === "checking") return <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white"><Loader2 className="animate-spin text-cyan-500 w-12 h-12" /></div>;
-  if (accessStatus === "not_found") return <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-center p-6"><SearchX className="w-24 h-24 text-slate-500 mb-6" /><h1 className="text-3xl font-black text-white uppercase tracking-widest mb-2">Sala No Encontrada</h1></div>;
-  if (accessStatus === "occupied") return <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-center p-6"><Lock className="w-24 h-24 text-rose-500 mb-6" /><h1 className="text-3xl font-black text-white uppercase tracking-widest mb-2">Sala Ocupada</h1></div>;
-  if (accessStatus === "error") return <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-center p-6"><AlertTriangle className="w-24 h-24 text-amber-500 mb-6" /><h1 className="text-3xl font-black text-white uppercase tracking-widest mb-2">Error de Conexión</h1></div>;
+  if (accessStatus === "checking") return <div className="min-h-[100dvh] bg-slate-950 flex flex-col items-center justify-center text-white"><Loader2 className="animate-spin text-cyan-500 w-12 h-12" /></div>;
+  if (accessStatus === "not_found") return <div className="min-h-[100dvh] bg-slate-950 flex flex-col items-center justify-center text-center p-6"><SearchX className="w-24 h-24 text-slate-500 mb-6" /><h1 className="text-3xl font-black text-white uppercase tracking-widest mb-2">Sala No Encontrada</h1></div>;
+  if (accessStatus === "occupied") return <div className="min-h-[100dvh] bg-slate-950 flex flex-col items-center justify-center text-center p-6"><Lock className="w-24 h-24 text-rose-500 mb-6" /><h1 className="text-3xl font-black text-white uppercase tracking-widest mb-2">Sala Ocupada</h1></div>;
+  if (accessStatus === "error") return <div className="min-h-[100dvh] bg-slate-950 flex flex-col items-center justify-center text-center p-6"><AlertTriangle className="w-24 h-24 text-amber-500 mb-6" /><h1 className="text-3xl font-black text-white uppercase tracking-widest mb-2">Error de Conexión</h1></div>;
 
   const targetPoints = (currentSetNumber === 5) ? 15 : 25;
   const hasSetPointA = scoreA >= targetPoints - 1 && scoreA - scoreB >= 1;
@@ -196,11 +196,23 @@ export default function ControllerPage({ params }: { params: Promise<{ matchId: 
   const isSubValid = subInPlayer.trim() !== "" && !isDuplicateSub;
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-slate-950 font-sans select-none touch-none relative">
+    // CAMBIO 1: min-h-[100dvh] permite scroll natural. pb-20 agrega espacio extra al final.
+    <div className="flex min-h-[100dvh] w-full flex-col bg-slate-950 font-sans select-none touch-manipulation relative pb-20">
       
-      {/* MODAL DE SUSTITUCIONES */}
+      {/* OVERLAY TIEMPO MUERTO (AHORA FIXED PARA CUBRIR TODA LA PANTALLA AUN CON SCROLL) */}
+      {activeTimeoutTeam && (
+        <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-md p-6">
+          <Timer className="w-16 h-16 sm:w-20 sm:h-20 text-white mb-6 animate-pulse" />
+          <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-widest text-center mb-2">Tiempo Muerto</h2>
+          <h3 className="text-xl sm:text-2xl font-bold text-slate-400 uppercase tracking-widest text-center mb-8">{activeTimeoutTeam === 'a' ? teamConfig.nameA : teamConfig.nameB}</h3>
+          <div className="text-[5rem] sm:text-[8rem] font-black text-white leading-none mb-12" style={{ fontStretch: 'condensed' }}>00:{timeLeft.toString().padStart(2, '0')}</div>
+          <button onClick={handleCancelTimeout} className="bg-white text-slate-950 px-8 py-4 font-black uppercase tracking-widest text-lg sm:text-xl active:scale-95 transition-all w-full max-w-sm" style={{ clipPath: "polygon(5% 0, 100% 0, 95% 100%, 0% 100%)" }}>Reanudar Juego</button>
+        </div>
+      )}
+
+      {/* MODAL DE SUSTITUCIONES (FIXED) */}
       {subModalTeam && (
-        <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 p-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4">
           <div className="bg-slate-900 w-full max-w-sm p-6 border border-slate-700" style={{ clipPath: "polygon(0 0, 100% 0, 95% 100%, 0% 100%)" }}>
             <h2 className="text-white font-black uppercase text-xl mb-4 text-center">Sustitución</h2>
             <div className="bg-slate-950 p-4 mb-4 border-l-4" style={{ borderColor: COLORS.find(c => c.id === (subModalTeam === 'a' ? teamConfig.colorA : teamConfig.colorB))?.hex }}>
@@ -240,9 +252,9 @@ export default function ControllerPage({ params }: { params: Promise<{ matchId: 
         </div>
       )}
 
-      {/* MODAL AJUSTES */}
+      {/* MODAL AJUSTES (FIXED) */}
       {isEditingTeams && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+        <div className="fixed inset-0 z-[50] flex items-center justify-center bg-black/80 p-4">
           <div className="bg-slate-900 w-full max-w-md p-6 border border-slate-700 max-h-[90vh] overflow-y-auto" style={{ clipPath: "polygon(0 0, 100% 0, 95% 100%, 0% 100%)" }}>
             <div className="flex justify-between items-center mb-6"><h2 className="text-xl sm:text-2xl font-black text-white uppercase">Ajustes</h2><button onClick={() => setIsEditingTeams(false)}><X className="text-slate-400" /></button></div>
             
@@ -320,8 +332,8 @@ export default function ControllerPage({ params }: { params: Promise<{ matchId: 
         </div>
       )}
 
-      {/* TOP BAR */}
-      <div className="z-20 flex h-16 sm:h-20 items-center justify-between bg-slate-950 px-4 sm:px-6 border-b border-slate-800">
+      {/* TOP BAR (AHORA STICKY) */}
+      <div className="sticky top-0 z-40 flex h-16 sm:h-20 shrink-0 items-center justify-between bg-slate-950 px-4 sm:px-6 border-b border-slate-800 shadow-md">
         <div className="flex flex-col"><span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sala</span><span className="text-lg sm:text-xl font-black text-white">{matchId}</span></div>
         <div className="relative"><div className="absolute inset-0 bg-slate-800" style={{ clipPath: "polygon(15% 0, 85% 0, 100% 50%, 85% 100%, 15% 100%, 0% 50%)" }} /><div className="px-6 py-1.5 sm:px-8 sm:py-2 text-center"><span className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Set</span><span className="ml-2 text-lg sm:text-xl font-black text-white">{currentSetNumber}</span></div></div>
         <div className="flex gap-2">
@@ -336,23 +348,23 @@ export default function ControllerPage({ params }: { params: Promise<{ matchId: 
         <div className="flex flex-1 flex-col md:flex-row">
           
           {/* CONTROLADOR EQUIPO A */}
-          <div role="button" onClick={pointA} className="relative flex flex-1 flex-col items-center justify-center bg-white transition-colors cursor-pointer active:bg-slate-100 pb-20 sm:pb-24">
+          <div role="button" onClick={pointA} className="relative flex flex-1 flex-col items-center justify-center bg-white transition-colors cursor-pointer active:bg-slate-100 py-10 sm:py-16">
             <div className="absolute left-0 right-0 top-0 h-4" style={{ backgroundColor: COLORS.find(c => c.id === teamConfig.colorA)?.hex }} />
             
             <div className="absolute top-6 left-0 right-0 flex justify-center h-8">
               {alertA && (<div className="bg-rose-600 text-white px-4 py-1 text-xs font-black tracking-widest uppercase animate-pulse shadow-lg" style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}>🔥 {alertA}</div>)}
             </div>
 
-            <button onClick={(e) => { e.stopPropagation(); setServe('a'); }} className={cn("mt-6 mb-2 sm:mb-4 px-4 py-1 text-[10px] sm:text-xs font-black tracking-widest uppercase transition-all shadow-sm", servingTeam === 'a' ? "bg-cyan-500 text-white scale-105" : "bg-slate-200 text-slate-400 hover:bg-slate-300")} style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}>
+            <button onClick={(e) => { e.stopPropagation(); setServe('a'); }} className={cn("mt-4 mb-2 sm:mt-6 sm:mb-4 px-4 py-1 text-[10px] sm:text-xs font-black tracking-widest uppercase transition-all shadow-sm", servingTeam === 'a' ? "bg-cyan-500 text-white scale-105" : "bg-slate-200 text-slate-400 hover:bg-slate-300")} style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}>
               {servingTeam === 'a' ? '🏐 Tiene el Saque' : 'Asignar Saque'}
             </button>
 
-            <span className="mb-1 sm:mb-2 text-xl sm:text-3xl font-bold uppercase tracking-widest text-slate-500">{teamConfig.nameA}</span>
-            <span className="text-[6rem] sm:text-[9rem] md:text-[12rem] font-black leading-none tracking-tighter text-slate-900" style={{ fontStretch: "condensed" }}>{scoreA}</span>
+            <span className="mb-1 sm:mb-2 text-lg sm:text-3xl font-bold uppercase tracking-widest text-slate-500">{teamConfig.nameA}</span>
+            <span className="text-[5.5rem] sm:text-[8rem] md:text-[12rem] font-black leading-[0.85] tracking-tighter text-slate-900" style={{ fontStretch: "condensed" }}>{scoreA}</span>
             <div className="mt-2 sm:mt-4 px-4 sm:px-6 py-1 mb-2" style={{ backgroundColor: COLORS.find(c => c.id === teamConfig.colorA)?.hex, clipPath: "polygon(10% 0, 90% 0, 100% 50%, 90% 100%, 10% 100%, 0% 50%)" }}><span className="text-xs sm:text-sm font-bold uppercase text-white">SETS: {setsA}</span></div>
             
             {isTournamentMode && (
-              <div className="w-full mt-2 flex flex-col items-center gap-1 px-4 z-10" onClick={(e) => e.stopPropagation()}>
+              <div className="w-full mt-2 flex flex-col items-center gap-2 px-4 z-10" onClick={(e) => e.stopPropagation()}>
                 <div className="flex gap-1 bg-slate-900 px-3 py-1 text-slate-300 font-mono text-[10px] w-full max-w-[280px] justify-center tracking-widest">
                   [ {lineupA.join(" - ")} ]
                 </div>
@@ -364,31 +376,32 @@ export default function ControllerPage({ params }: { params: Promise<{ matchId: 
               </div>
             )}
 
-            <div className="absolute bottom-4 sm:bottom-6 flex w-full justify-center px-4">
-              <button onClick={(e) => { e.stopPropagation(); handleStartTimeout('a'); }} disabled={timeoutsA >= 2} className={cn("flex w-full max-w-[180px] sm:max-w-[200px] items-center justify-center gap-2 sm:gap-3 px-4 py-3 sm:px-6 sm:py-4 shadow-lg transition-all active:scale-95", timeoutsA >= 2 ? "bg-slate-200 text-slate-400" : "bg-slate-900 text-white active:bg-slate-800")} style={{ clipPath: "polygon(8% 0, 100% 0, 92% 100%, 0% 100%)" }}>
+            {/* CAMBIO 3: Botones fuera de "absolute bottom". Ahora fluyen de forma natural */}
+            <div className="mt-6 flex w-full justify-center px-4 z-10" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => handleStartTimeout('a')} disabled={timeoutsA >= 2} className={cn("flex w-full max-w-[180px] sm:max-w-[200px] items-center justify-center gap-2 sm:gap-3 px-4 py-3 shadow-lg transition-all active:scale-95", timeoutsA >= 2 ? "bg-slate-200 text-slate-400" : "bg-slate-900 text-white active:bg-slate-800")} style={{ clipPath: "polygon(8% 0, 100% 0, 92% 100%, 0% 100%)" }}>
                 <Timer className="w-5 h-5 sm:w-6 sm:h-6" /> <div className="flex flex-col text-left"><span className="font-black text-xs sm:text-sm leading-none tracking-widest uppercase">Tiempo</span><span className="text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none mt-1">{2 - timeoutsA} RESTANTES</span></div>
               </button>
             </div>
           </div>
 
           {/* CONTROLADOR EQUIPO B */}
-          <div role="button" onClick={pointB} className="relative flex flex-1 flex-col items-center justify-center bg-slate-50 border-t-2 md:border-t-0 md:border-l-2 border-slate-200 transition-colors cursor-pointer active:bg-rose-50 pb-20 sm:pb-24">
+          <div role="button" onClick={pointB} className="relative flex flex-1 flex-col items-center justify-center bg-slate-50 border-t-2 md:border-t-0 md:border-l-2 border-slate-200 transition-colors cursor-pointer active:bg-rose-50 py-10 sm:py-16">
             <div className="absolute left-0 right-0 top-0 h-4" style={{ backgroundColor: COLORS.find(c => c.id === teamConfig.colorB)?.hex }} />
             
             <div className="absolute top-6 left-0 right-0 flex justify-center h-8">
               {alertB && (<div className="bg-rose-600 text-white px-4 py-1 text-xs font-black tracking-widest uppercase animate-pulse shadow-lg" style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}>🔥 {alertB}</div>)}
             </div>
 
-            <button onClick={(e) => { e.stopPropagation(); setServe('b'); }} className={cn("mt-6 mb-2 sm:mb-4 px-4 py-1 text-[10px] sm:text-xs font-black tracking-widest uppercase transition-all shadow-sm", servingTeam === 'b' ? "bg-rose-500 text-white scale-105" : "bg-slate-200 text-slate-400 hover:bg-slate-300")} style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}>
+            <button onClick={(e) => { e.stopPropagation(); setServe('b'); }} className={cn("mt-4 mb-2 sm:mt-6 sm:mb-4 px-4 py-1 text-[10px] sm:text-xs font-black tracking-widest uppercase transition-all shadow-sm", servingTeam === 'b' ? "bg-rose-500 text-white scale-105" : "bg-slate-200 text-slate-400 hover:bg-slate-300")} style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}>
               {servingTeam === 'b' ? '🏐 Tiene el Saque' : 'Asignar Saque'}
             </button>
 
-            <span className="mb-1 sm:mb-2 text-xl sm:text-3xl font-bold uppercase tracking-widest text-slate-500">{teamConfig.nameB}</span>
-            <span className="text-[6rem] sm:text-[9rem] md:text-[12rem] font-black leading-none tracking-tighter text-slate-900" style={{ fontStretch: "condensed" }}>{scoreB}</span>
+            <span className="mb-1 sm:mb-2 text-lg sm:text-3xl font-bold uppercase tracking-widest text-slate-500">{teamConfig.nameB}</span>
+            <span className="text-[5.5rem] sm:text-[8rem] md:text-[12rem] font-black leading-[0.85] tracking-tighter text-slate-900" style={{ fontStretch: "condensed" }}>{scoreB}</span>
             <div className="mt-2 sm:mt-4 px-4 sm:px-6 py-1 mb-2" style={{ backgroundColor: COLORS.find(c => c.id === teamConfig.colorB)?.hex, clipPath: "polygon(10% 0, 90% 0, 100% 50%, 90% 100%, 10% 100%, 0% 50%)" }}><span className="text-xs sm:text-sm font-bold uppercase text-white">SETS: {setsB}</span></div>
             
             {isTournamentMode && (
-              <div className="w-full mt-2 flex flex-col items-center gap-1 px-4 z-10" onClick={(e) => e.stopPropagation()}>
+              <div className="w-full mt-2 flex flex-col items-center gap-2 px-4 z-10" onClick={(e) => e.stopPropagation()}>
                 <div className="flex gap-1 bg-slate-900 px-3 py-1 text-slate-300 font-mono text-[10px] w-full max-w-[280px] justify-center tracking-widest">
                   [ {lineupB.join(" - ")} ]
                 </div>
@@ -400,8 +413,8 @@ export default function ControllerPage({ params }: { params: Promise<{ matchId: 
               </div>
             )}
 
-            <div className="absolute bottom-4 sm:bottom-6 flex w-full justify-center px-4">
-              <button onClick={(e) => { e.stopPropagation(); handleStartTimeout('b'); }} disabled={timeoutsB >= 2} className={cn("flex w-full max-w-[180px] sm:max-w-[200px] items-center justify-center gap-2 sm:gap-3 px-4 py-3 sm:px-6 sm:py-4 shadow-lg transition-all active:scale-95", timeoutsB >= 2 ? "bg-slate-200 text-slate-400" : "bg-slate-900 text-white active:bg-slate-800")} style={{ clipPath: "polygon(8% 0, 100% 0, 92% 100%, 0% 100%)" }}>
+            <div className="mt-6 flex w-full justify-center px-4 z-10" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => handleStartTimeout('b')} disabled={timeoutsB >= 2} className={cn("flex w-full max-w-[180px] sm:max-w-[200px] items-center justify-center gap-2 sm:gap-3 px-4 py-3 shadow-lg transition-all active:scale-95", timeoutsB >= 2 ? "bg-slate-200 text-slate-400" : "bg-slate-900 text-white active:bg-slate-800")} style={{ clipPath: "polygon(8% 0, 100% 0, 92% 100%, 0% 100%)" }}>
                 <Timer className="w-5 h-5 sm:w-6 sm:h-6" /> <div className="flex flex-col text-left"><span className="font-black text-xs sm:text-sm leading-none tracking-widest uppercase">Tiempo</span><span className="text-[9px] sm:text-[10px] font-bold text-slate-400 leading-none mt-1">{2 - timeoutsB} RESTANTES</span></div>
               </button>
             </div>
